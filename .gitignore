@@ -1,0 +1,10 @@
+# Ignore data and environment files
+*.txt
+*.yaml
+*.pt
+*.pyc
+__pycache__/
+myenv/
+*.ipynb_checkpoints/
+
+# Ignore everything in runs except model files

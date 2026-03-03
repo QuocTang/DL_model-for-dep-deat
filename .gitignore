@@ -8,3 +8,7 @@ myenv/
 *.ipynb_checkpoints/
 
 # Ignore everything in runs except model files
+# Allow specific model files in runs/detect
+detect/durian-1-yolo11x/weights/best.pt
+
+!runs/detect/durian-1-yolo11x/weights/best.pt

@@ -1,0 +1,90 @@
+# ============================================================
+# Cấu hình mặc định cho Durian Leaf Disease Detection
+# ============================================================
+
+# --- Roboflow Data Source ---
+roboflow:
+  api_key: "8XQTfGjudP24VUAJUVkA" # Nên dùng biến môi trường ROBOFLOW_API_KEY
+  workspace: "cico-siefo"
+  project: "durian-k51j3"
+  version: 1
+  format: "yolov11"
+
+# --- Đường dẫn dữ liệu ---
+paths:
+  raw_data: "./data/raw" # Dữ liệu gốc từ Roboflow
+  refactored_data: "./data/refactored" # Dữ liệu sau refactor nhãn
+  balanced_data: "./data/balanced" # Dữ liệu sau cân bằng
+  output: "./outputs" # Kết quả (biểu đồ, logs)
+
+# --- Tên các lớp bệnh gốc (15 lớp) ---
+original_class_names:
+  - "benh bo tri"
+  - "benh phan trang"
+  - "benh-chay-la"
+  - "benh-dom-mat-cua"
+  - "benh-gi-sat"
+  - "benh-la-vang"
+  - "benh-tao-do"
+  - "benh-than-thu"
+  - "dom la do nam"
+  - "dom sinh ly nhe"
+  - "la khoe binh thuong"
+  - "sau ve bua"
+  - "sau-an"
+  - "vang sinh ly"
+  - "vang thieu magie"
+
+# --- Ánh xạ lớp (refactor) ---
+# Giữ 5 lớp chính, gộp còn lại thành lớp 5
+class_mapping:
+  12: 0 # sau-an           → class 0
+  2: 1 # benh-chay-la     → class 1
+  7: 2 # benh-than-thu    → class 2
+  3: 3 # benh-dom-mat-cua → class 3
+  10: 4 # la khoe          → class 4
+  # Tất cả ID khác → class 5 (other)
+  default: 5
+
+refactored_class_names:
+  - "sau-an"
+  - "benh-chay-la"
+  - "benh-than-thu"
+  - "benh-dom-mat-cua"
+  - "la-khoe"
+  - "other"
+
+# --- Cân bằng dữ liệu (Downsampling) ---
+balance:
+  target_classes: [2, 12] # Class IDs gốc cần downsample
+  keep_ratio: 0.4 # Giữ lại 40%
+  splits: ["train"] # Splits cần cân bằng
+  seed: 42 # Random seed
+
+# --- Huấn luyện ---
+training:
+  model: "yolo11x.pt" # Pretrained model
+  data_yaml: null # Sẽ tự generate hoặc chỉ định
+  batch: 8
+  epochs: 100
+  device: 0 # GPU index (0 = GPU đầu tiên, "cpu" = CPU)
+  imgsz: 640
+  optimizer: "AdamW"
+  lr0: 0.005
+  lrf: 0.10
+  weight_decay: 0.0005
+  warmup_epochs: 3
+  cos_lr: true
+  patience: 50
+  seed: 42
+  pretrained: true
+  save: true
+  val: true
+  plots: true
+  name: "durian-1-yolo11x"
+
+# --- Visualization ---
+visualization:
+  splits: ["train", "valid"]
+  figsize: [14, 6]
+  save_plot: true # Lưu biểu đồ ra file thay vì plt.show()

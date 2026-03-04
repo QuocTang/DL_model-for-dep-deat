@@ -70,3 +70,5 @@ htmlcov/
 # Keep config files
 !config/
 !config/**
+
+/data

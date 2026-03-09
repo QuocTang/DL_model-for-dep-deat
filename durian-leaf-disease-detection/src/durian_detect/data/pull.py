@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 
 from durian_detect.config import AppConfig
@@ -10,11 +11,19 @@ from durian_detect.config import AppConfig
 logger = logging.getLogger(__name__)
 
 
-def pull_dataset(config: AppConfig) -> Path:
+def _has_data(directory: Path) -> bool:
+    """Kiểm tra thư mục đã chứa dữ liệu (ít nhất 1 file) hay chưa."""
+    if not directory.exists():
+        return False
+    return any(directory.rglob("*"))
+
+
+def pull_dataset(config: AppConfig, *, force: bool = False) -> Path:
     """Tải dataset từ Roboflow về thư mục local.
 
     Args:
         config: Cấu hình ứng dụng.
+        force: Nếu True, xóa dữ liệu cũ và tải lại từ đầu.
 
     Returns:
         Đường dẫn tới thư mục dataset đã tải.
@@ -31,7 +40,28 @@ def pull_dataset(config: AppConfig) -> Path:
         )
 
     dst = Path(config.paths.raw_data)
-    dst.mkdir(parents=True, exist_ok=True)
+
+    # Kiểm tra dữ liệu đã tồn tại
+    if _has_data(dst):
+        if not force:
+            logger.warning(
+                "⚠️  Thư mục '%s' đã chứa dữ liệu. "
+                "Bỏ qua việc tải lại. Dùng --force để tải lại từ đầu.",
+                dst,
+            )
+            return dst
+        else:
+            logger.info("🗑️  --force được bật. Xóa dữ liệu cũ tại '%s'...", dst)
+            shutil.rmtree(dst)
+
+    # Xóa folder rỗng nếu tồn tại (Roboflow SDK sẽ skip download
+    # nếu thấy folder location đã tồn tại)
+    if dst.exists() and not any(dst.iterdir()):
+        dst.rmdir()
+
+    # Đảm bảo folder CHA tồn tại, nhưng KHÔNG tạo folder dst
+    # để Roboflow SDK tự tạo khi tải về
+    dst.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info("Connecting to Roboflow workspace '%s'...", rf_cfg.workspace)
     logger.info("Project: '%s', Version: %d", rf_cfg.project, rf_cfg.version)
@@ -45,6 +75,13 @@ def pull_dataset(config: AppConfig) -> Path:
         dataset = version.download(rf_cfg.format, location=str(dst))
     except Exception as e:
         raise RuntimeError(f"Failed to download dataset: {e}") from e
+
+    # Kiểm tra sau download
+    if not _has_data(dst):
+        raise RuntimeError(
+            f"Download hoàn tất nhưng không tìm thấy dữ liệu tại '{dst}'. "
+            "Vui lòng kiểm tra API key và tên project/version."
+        )
 
     logger.info("✅ Dataset downloaded to: %s", dst)
     return dst

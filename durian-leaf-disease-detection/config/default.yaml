@@ -56,7 +56,7 @@ refactored_class_names:
 
 # --- Cân bằng dữ liệu (Downsampling) ---
 balance:
-  target_classes: [2, 12] # Class IDs gốc cần downsample
+  target_classes: [0, 1] # Class IDs SAU refactor: 0=sau-an, 1=benh-chay-la
   keep_ratio: 0.4 # Giữ lại 40%
   splits: ["train"] # Splits cần cân bằng
   seed: 42 # Random seed

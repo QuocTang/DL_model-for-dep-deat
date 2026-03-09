@@ -79,7 +79,7 @@ def refactor_labels(config: AppConfig) -> Path:
 
             for line in lines:
                 parts = line.strip().split()
-                if len(parts) != 5:
+                if len(parts) < 2:
                     continue
 
                 old_id = int(parts[0])

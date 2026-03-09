@@ -68,12 +68,21 @@ def cmd_balance(args: argparse.Namespace) -> None:
 
 
 def cmd_plot(args: argparse.Namespace) -> None:
-    """Vẽ biểu đồ phân phối lớp."""
+    """Vẽ biểu đồ phân phối lớp (raw data)."""
     config = load_config(_resolve_config_path(args.config))
 
     from durian_detect.visualization.distribution import plot_distribution
 
     plot_distribution(config)
+
+
+def cmd_plot_all(args: argparse.Namespace) -> None:
+    """Vẽ biểu đồ phân phối cho cả 3 dataset."""
+    config = load_config(_resolve_config_path(args.config))
+
+    from durian_detect.visualization.distribution import plot_all_distributions
+
+    plot_all_distributions(config)
 
 
 def cmd_train(args: argparse.Namespace) -> None:
@@ -173,7 +182,10 @@ Examples:
     subparsers.add_parser("balance", help="Cân bằng dữ liệu (downsample)")
 
     # plot
-    subparsers.add_parser("plot", help="Vẽ biểu đồ phân phối lớp")
+    subparsers.add_parser("plot", help="Vẽ biểu đồ phân phối lớp (raw data)")
+
+    # plot-all
+    subparsers.add_parser("plot-all", help="Vẽ biểu đồ phân phối cho cả 3 dataset (raw, refactored, balanced)")
 
     # train
     subparsers.add_parser("train", help="Huấn luyện YOLOv11x model")
@@ -212,6 +224,7 @@ def main() -> None:
         "refactor": cmd_refactor,
         "balance": cmd_balance,
         "plot": cmd_plot,
+        "plot-all": cmd_plot_all,
         "train": cmd_train,
         "pipeline": cmd_pipeline,
     }

@@ -78,6 +78,7 @@ class TrainingConfig:
     val: bool = True
     plots: bool = True
     name: str = "durian-1-yolo11x"
+    project: str | None = None
 
 
 @dataclass

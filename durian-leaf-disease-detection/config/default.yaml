@@ -67,7 +67,7 @@ training:
   data_yaml: null # Sẽ tự generate hoặc chỉ định
   batch: 8
   epochs: 100
-  device: 0 # GPU index (0 = GPU đầu tiên, "cpu" = CPU)
+  device: "mps" # Dùng "mps" cho MacOS (M1/M2/M3), "cpu" cho máy ko có card rời, hoặc 0 cho card NVIDIA rời
   imgsz: 640
   optimizer: "AdamW"
   lr0: 0.005
@@ -82,6 +82,7 @@ training:
   val: true
   plots: true
   name: "durian-1-yolo11x"
+  project: "outputs/runs" # Đường dẫn lưu kết quả train (thay cho runs/ mặc định)
 
 # --- Visualization ---
 visualization:

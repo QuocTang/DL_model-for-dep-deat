@@ -1,14 +1,29 @@
-# Ignore data and environment files
-*.txt
-*.yaml
-*.pt
-*.pyc
+# Python cache/build
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
 myenv/
-*.ipynb_checkpoints/
 
-# Ignore everything in runs except model files
-# Allow specific model files in runs/detect
-detect/durian-1-yolo11x/weights/best.pt
+# Notebook cache
+.ipynb_checkpoints/
 
-!runs/detect/durian-1-yolo11x/weights/best.pt
+# Large dataset folders
+durian-1/
+durian-1_balanced/
+
+# Generated feature/model outputs (large artifacts)
+extracted_features/
+extracted_features_top6/
+ml_models/
+ml_models_rf/
+ml_models_top6/
+model_comparison/
+
+# Keep training/inference model weights in runs/
+!runs/**/weights/*.pt

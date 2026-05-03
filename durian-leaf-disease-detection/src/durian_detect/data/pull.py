@@ -11,16 +11,19 @@ from durian_detect.config import AppConfig
 logger = logging.getLogger(__name__)
 
 
-def _is_dir_empty(path: Path) -> bool:
-    """Kiểm tra thư mục có rỗng hay không."""
-    return path.exists() and not any(path.iterdir())
+def _has_data(directory: Path) -> bool:
+    """Kiểm tra thư mục đã chứa dữ liệu (ít nhất 1 file) hay chưa."""
+    if not directory.exists():
+        return False
+    return any(directory.rglob("*"))
 
 
-def pull_dataset(config: AppConfig) -> Path:
+def pull_dataset(config: AppConfig, *, force: bool = False) -> Path:
     """Tải dataset từ Roboflow về thư mục local.
 
     Args:
         config: Cấu hình ứng dụng.
+        force: Nếu True, xóa dữ liệu cũ và tải lại từ đầu.
 
     Returns:
         Đường dẫn tới thư mục dataset đã tải.
@@ -38,10 +41,20 @@ def pull_dataset(config: AppConfig) -> Path:
 
     dst = Path(config.paths.raw_data)
 
+    if _has_data(dst):
+        if not force:
+            logger.warning(
+                "⚠️  Thư mục '%s' đã chứa dữ liệu. "
+                "Bỏ qua việc tải lại. Dùng --force để tải lại từ đầu.",
+                dst,
+            )
+            return dst
+        logger.info("🗑️  --force được bật. Xóa dữ liệu cũ tại '%s'...", dst)
+        shutil.rmtree(dst)
+
     # Roboflow SDK sẽ skip download nếu thư mục đích đã tồn tại.
     # → Nếu thư mục tồn tại nhưng rỗng, xóa đi để Roboflow tải lại.
-    if _is_dir_empty(dst):
-        logger.warning("Thư mục '%s' tồn tại nhưng rỗng, xóa để tải lại...", dst)
+    if dst.exists() and not any(dst.iterdir()):
         dst.rmdir()
 
     # Chỉ tạo thư mục CHA, KHÔNG tạo thư mục đích (để Roboflow tự tạo khi download)
@@ -61,16 +74,12 @@ def pull_dataset(config: AppConfig) -> Path:
     except Exception as e:
         raise RuntimeError(f"Failed to download dataset: {e}") from e
 
-    # Kiểm tra kết quả download
-    if not dst.exists():
+    if not _has_data(dst):
         raise RuntimeError(
-            f"Download có vẻ thành công nhưng thư mục '{dst}' không tồn tại."
+            f"Download hoàn tất nhưng không tìm thấy dữ liệu tại '{dst}'. "
+            "Vui lòng kiểm tra API key và tên project/version."
         )
 
     file_count = sum(1 for _ in dst.rglob("*") if _.is_file())
-    if file_count == 0:
-        logger.warning("⚠️  Thư mục '%s' tồn tại nhưng không có file nào!", dst)
-    else:
-        logger.info("✅ Dataset downloaded to: %s (%d files)", dst, file_count)
-
+    logger.info("✅ Dataset downloaded to: %s (%d files)", dst, file_count)
     return dst

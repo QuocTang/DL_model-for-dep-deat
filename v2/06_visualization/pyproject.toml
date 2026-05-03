@@ -1,0 +1,25 @@
+[project]
+name = "v2"
+version = "0.1.0"
+description = "Durian disease detection utilities (v2)"
+readme = "README.md"
+requires-python = ">=3.13"
+
+# Core dependencies required by the scripts in this package
+dependencies = [
+    "numpy",
+    "pandas",
+    "torch",
+    "opencv-python",
+    "tqdm",
+    "ultralytics",
+    "pyyaml",
+    "joblib",
+    "pillow",
+    "streamlit",
+    "pyside6",
+    "seaborn",
+    "matplotlib",
+    "roboflow",
+    "xgboost",
+]

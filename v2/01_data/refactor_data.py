@@ -43,9 +43,9 @@ for split in ["train", "valid", "test"]:
         new_lines = []
         for line in lines:
             parts = line.strip().split()
-            if len(parts) != 5:
+            # Hỗ trợ cả bbox (5 token) lẫn polygon (>5 token, lẻ).
+            if len(parts) < 5:
                 continue
-            print(parts)
             old_id = int(parts[0])
             parts[0] = str(new_class_id(old_id))
             new_lines.append(" ".join(parts))

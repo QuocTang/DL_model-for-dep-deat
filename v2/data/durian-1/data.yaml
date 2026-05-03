@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 15
+names: ['benh bo tri', 'benh phan trang', 'benh-chay-la', 'benh-dom-mat-cua', 'benh-gi-sat', 'benh-la-vang', 'benh-tao-do', 'benh-than-thu', 'dom la do nam', 'dom sinh ly nhe', 'la khoe binh thuong', 'sau ve bua', 'sau-an', 'vang sinh ly', 'vang thieu magie']
+
+roboflow:
+  workspace: cico-siefo
+  project: durian-k51j3
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/cico-siefo/durian-k51j3/dataset/1

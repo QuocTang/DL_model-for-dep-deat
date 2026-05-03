@@ -28,20 +28,34 @@ v2/
 
 ## Flow đầy đủ (chạy lần lượt)
 
+> Mọi lệnh chạy từ thư mục `v2/` (`cd v2` trước), dùng `uv run <file>` thay cho `python <file>`.
+
 | Bước | Lệnh | Output |
 |---|---|---|
-| 1.1 Pull dataset | `python v2/01_data/pull_data.py` | `v2/data/durian-1/` |
-| 1.2 Refactor nhãn | `python v2/01_data/refactor_data.py` | `v2/data/durian_refactor/` |
-| 1.3 (Tùy chọn) Cân bằng | `python v2/01_data/downsample_large_classes.py` | `v2/data/durian-1_balanced/` |
-| 2. EDA phân bố | `python v2/02_eda/plot_class_distribution.py` | biểu đồ |
-| 3. Train YOLO | `python v2/03_train_detector/train_yolo.py` | `v2/output/runs/detect/durian-1-yolo11x/weights/best.pt` |
-| 4.1 Trích feature | `python v2/04_features/extract_deep_features.py` | `v2/output/extracted_features/{train,valid,test}_features.csv` |
-| 4.2 Lọc top-K class | `python v2/04_features/filter_top_classes.py` | `v2/output/extracted_features_top6/` |
-| 5.1 Train ML | `python v2/05_train_classifier/train_ml_features.py --model xgb` | `v2/output/ml_models/xgb_model.joblib` |
-| 5.2 So sánh | `python v2/05_train_classifier/compare_models.py --comparison-dir v2/output/model_comparison` | CSV + Markdown |
-| 6.a Inference CLI | `python v2/06_inference/cli.py --image <path>` | JSON kết quả |
-| 6.b UI Streamlit | `streamlit run v2/06_inference/ui_streamlit.py` | web UI |
-| 6.c UI PySide6 | `python v2/06_inference/ui_pyside.py` | desktop UI |
+| 1.1 Pull dataset | `uv run 01_data/pull_data.py` | `data/durian-1/` |
+| 1.2 (Tùy chọn) Cân bằng class lớn | `uv run 01_data/downsample_large_classes.py` | `data/durian-1_balanced/` |
+| 1.3 Refactor nhãn (15 → 6 class) | `uv run 01_data/refactor_data.py` | `data/durian_refactor/` |
+| 2. EDA phân bố | `uv run 02_eda/plot_class_distribution.py` | biểu đồ |
+| 3. Train YOLO | `uv run 03_train_detector/train_yolo.py` | `output/runs/detect/durian-1-yolo11x/weights/best.pt` |
+| 4.1 Trích feature | `uv run 04_features/extract_deep_features.py` | `output/extracted_features/{train,valid,test}_features.csv` |
+| 4.2 Lọc top-K class | `uv run 04_features/filter_top_classes.py` | `output/extracted_features_top6/` |
+| 5.1 Train ML | `uv run 05_train_classifier/train_ml_features.py --model xgb` | `output/ml_models/xgb_model.joblib` |
+| 5.2 So sánh model | `uv run 05_train_classifier/compare_models.py --comparison-dir output/model_comparison` | CSV + Markdown |
+| 6.a Inference CLI | `uv run 06_inference/cli.py --image <path>` | JSON kết quả |
+| 6.b UI Streamlit | `uv run streamlit run 06_inference/ui_streamlit.py` | web UI |
+| 6.c UI PySide6 | `uv run 06_inference/ui_pyside.py` | desktop UI |
+
+### ⚠️ Lưu ý thứ tự bước 1
+
+`downsample_large_classes.py` dùng **class ID gốc** (2, 12 = benh-chay-la, sau-an), nên **phải chạy TRƯỚC `refactor_data.py`** (refactor đổi class ID). Nếu chạy ngược, downsample không tìm được class để bỏ.
+
+### 💡 Cho người mới: lần đầu nên skip 1.2
+
+Bỏ qua `downsample_large_classes.py` cho lần chạy đầu vì:
+- Mất 60% ảnh class lớn — có thể làm model yếu hơn
+- Chỉ xử lý split `train`, không đụng valid/test → metric không phản ánh đúng
+- Output `durian-1_balanced/` không kết nối với `durian_refactor/` (refactor không đọc folder này)
+- Cách balance tốt hơn: dùng `class_weights` trong `model.train()` của ultralytics — sẽ làm sau khi có baseline metrics
 
 ## Cài đặt
 

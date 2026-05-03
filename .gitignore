@@ -27,3 +27,9 @@ model_comparison/
 
 # Keep training/inference model weights in runs/
 !runs/**/weights/*.pt
+
+# v2: ignore raw data + outputs, but keep data.yaml config files
+v2/data/**
+!v2/data/**/
+!v2/data/**/data.yaml
+output/

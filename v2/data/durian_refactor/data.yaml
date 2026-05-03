@@ -1,6 +1,6 @@
-train: ../train/images
-val: ../valid/images
-test: ../test/images
+train: train/images
+val: valid/images
+test: test/images
 
 nc: 6
 names: ['sau-an', 'benh-chay-la', 'benh-than-thu', 'benh-dom-mat-cua', 'la-khoe-binh-thuong', 'others']

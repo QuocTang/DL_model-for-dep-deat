@@ -33,3 +33,6 @@ v2/data/**
 !v2/data/**/
 !v2/data/**/data.yaml
 output/
+
+# Pretrained weights auto-downloaded by ultralytics (re-downloadable)
+v2/*.pt

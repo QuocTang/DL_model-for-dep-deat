@@ -18,7 +18,7 @@ OUTPUT_ROOT = V2_ROOT / "output"
 
 # YOLO training
 RUNS_DIR = OUTPUT_ROOT / "runs" / "detect"
-DEFAULT_RUN_NAME = "durian-1-yolo11x"
+DEFAULT_RUN_NAME = "durian-1-yolo11n-smoke"
 DEFAULT_WEIGHTS = RUNS_DIR / DEFAULT_RUN_NAME / "weights" / "best.pt"
 
 # EDA

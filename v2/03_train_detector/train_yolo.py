@@ -1,3 +1,13 @@
+"""Smoke test train YOLO ~15 phút trên GTX 1650.
+
+Mục đích: chạy thông pipeline + có best.pt để bước feature extraction
+chạy được. KHÔNG kỳ vọng accuracy cao.
+
+Phương án C: yolo11n + imgsz=320 + epochs=8 + fraction=1.0
+Sau khi hiểu pipeline, đổi sang yolo11s/m + imgsz=640 + epochs>=50 cho
+run thật.
+"""
+
 import sys
 from pathlib import Path
 
@@ -13,43 +23,48 @@ def main():
     print(f"torch.cuda.device_count(): {torch.cuda.device_count()}")
     print(f"CUDA version: {torch.version.cuda}")
 
-    model = YOLO("yolo11x.pt")
+    device = 0 if torch.cuda.is_available() else "cpu"
+    model = YOLO("yolo11n.pt")
 
     results = model.train(
         data=str(DATA_YAML),
         project=str(RUNS_DIR),
-        batch=8,
-        epochs=100,
-        device=0,
-        imgsz=640,
+        name=DEFAULT_RUN_NAME,
+        epochs=8,
+        imgsz=320,
+        batch=16,
+        fraction=1.0,
+        device=device,
         optimizer="AdamW",
         lr0=0.005,
         lrf=0.10,
         weight_decay=0.0005,
-        warmup_epochs=3,
+        warmup_epochs=1,
         cos_lr=True,
-        patience=50,
+        patience=8,
         seed=42,
         pretrained=True,
+        cache="ram",
         save=True,
+        save_period=-1,
         val=True,
         plots=True,
-        name=DEFAULT_RUN_NAME,
     )
 
     metrics = model.val(
         data=str(DATA_YAML),
         project=str(RUNS_DIR),
-        name="val",
-        imgsz=640,
-        batch=8,
+        name=f"{DEFAULT_RUN_NAME}-val",
+        imgsz=320,
+        batch=16,
         save_json=True,
     )
 
     print(metrics)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import multiprocessing
-    multiprocessing.freeze_support()  # 👈 required on Windows
-    multiprocessing.set_start_method('spawn', force=True)
+    multiprocessing.freeze_support()
+    multiprocessing.set_start_method("spawn", force=True)
     main()

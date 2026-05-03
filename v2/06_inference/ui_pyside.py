@@ -2,7 +2,7 @@
 PySide6 desktop UI for single-image inference.
 
 Run:
-  c:/Users/ADMIN/Desktop/personal_train/ML_deppfeat/.venv/Scripts/python.exe infer_ui_pyside6.py
+  python v2/06_inference/ui_pyside.py
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from infer_utils import (
+from core import (
     DEFAULT_ML_MODEL,
     DEFAULT_RESULTS_JSON,
     DEFAULT_YOLO_WEIGHTS,

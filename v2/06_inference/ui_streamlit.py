@@ -2,7 +2,7 @@
 Streamlit UI for single-image inference using YOLO deep features + trained ML model.
 
 Run:
-  c:/Users/ADMIN/Desktop/personal_train/ML_deppfeat/.venv/Scripts/python.exe -m streamlit run infer_ui_streamlit.py
+  streamlit run v2/06_inference/ui_streamlit.py
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from infer_utils import (
+from core import (
     DEFAULT_ML_MODEL,
     DEFAULT_RESULTS_JSON,
     DEFAULT_YOLO_WEIGHTS,

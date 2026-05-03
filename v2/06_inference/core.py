@@ -13,7 +13,7 @@ import joblib
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "02_feature_extraction"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "04_features"))
 from config import DEFAULT_ML_MODEL, DEFAULT_RESULTS_JSON, DEFAULT_WEIGHTS
 from extract_deep_features import YoloFeatureExtractor
 

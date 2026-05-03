@@ -2,7 +2,7 @@
 CLI inference for one image.
 
 Example:
-  c:/Users/ADMIN/Desktop/personal_train/ML_deppfeat/.venv/Scripts/python.exe infer_cli.py --image path/to/image.jpg
+  python v2/06_inference/cli.py --image path/to/image.jpg
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from infer_utils import (
+from core import (
     DEFAULT_ML_MODEL,
     DEFAULT_RESULTS_JSON,
     DEFAULT_YOLO_WEIGHTS,

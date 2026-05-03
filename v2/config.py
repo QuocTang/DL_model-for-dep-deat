@@ -1,13 +1,32 @@
-import os
+"""Cấu hình đường dẫn chung cho v2.
+
+Mọi data đầu vào, model weights, features, kết quả ML đều nằm dưới `v2/`.
+Các script con import từ đây thay vì hard-code đường dẫn.
+"""
+
 from pathlib import Path
 
-# Đường dẫn gốc dữ liệu (source) và thư mục đích (destination) cho việc refactor.
-# Sử dụng đường dẫn tương đối tới thư mục `data` trong dự án để tránh hard‑code đường dẫn Windows.
-# Thay đổi nếu muốn lưu trữ dữ liệu ở vị trí khác.
-SRC_ROOT = Path(__file__).resolve().parent / "data" / "durian-1"
-DST_ROOT = Path(__file__).resolve().parent / "data" / "durian_refactor"
+V2_ROOT = Path(__file__).resolve().parent
 
-# ROOT_DIR được dùng trong một số script (vd. downsample_large_classes) để trỏ tới dữ liệu gốc.
-# Nếu muốn dùng cùng một đường dẫn, gán ROOT_DIR = SRC_ROOT.
-ROOT_DIR = SRC_ROOT
+# === Datasets ===
+SRC_ROOT = V2_ROOT / "data" / "durian-1"          # Dataset gốc (sau khi pull từ Roboflow)
+DST_ROOT = V2_ROOT / "data" / "durian_refactor"   # Dataset sau khi refactor nhãn
+DATA_YAML = SRC_ROOT / "data.yaml"
 
+# === Outputs (gộp chung dưới `v2/output/`) ===
+OUTPUT_ROOT = V2_ROOT / "output"
+
+# YOLO training
+RUNS_DIR = OUTPUT_ROOT / "runs" / "detect"
+DEFAULT_RUN_NAME = "durian-1-yolo11x"
+DEFAULT_WEIGHTS = RUNS_DIR / DEFAULT_RUN_NAME / "weights" / "best.pt"
+
+# Feature extraction & ML training
+EXTRACTED_FEATURES_DIR = OUTPUT_ROOT / "extracted_features"
+EXTRACTED_FEATURES_TOP6 = OUTPUT_ROOT / "extracted_features_top6"
+ML_MODELS_DIR = OUTPUT_ROOT / "ml_models"
+MODEL_COMPARISON_DIR = OUTPUT_ROOT / "model_comparison"
+
+# === Inference defaults (XGBoost top-6) ===
+DEFAULT_ML_MODEL = MODEL_COMPARISON_DIR / "top6_filtered" / "xgb" / "xgb_model.joblib"
+DEFAULT_RESULTS_JSON = MODEL_COMPARISON_DIR / "top6_filtered" / "xgb" / "results.json"

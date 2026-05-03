@@ -11,16 +11,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import EXTRACTED_FEATURES_DIR, EXTRACTED_FEATURES_TOP6, ML_MODELS_DIR
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Filter feature CSVs to top classes")
-    parser.add_argument("--input-dir", type=Path, default=Path("extracted_features"))
-    parser.add_argument("--report-csv", type=Path, default=Path("ml_models/classification_report_valid.csv"))
-    parser.add_argument("--output-dir", type=Path, default=Path("extracted_features_top6"))
+    parser.add_argument("--input-dir", type=Path, default=EXTRACTED_FEATURES_DIR)
+    parser.add_argument("--report-csv", type=Path, default=ML_MODELS_DIR / "classification_report_valid.csv")
+    parser.add_argument("--output-dir", type=Path, default=EXTRACTED_FEATURES_TOP6)
     parser.add_argument("--top-k", type=int, default=6)
     parser.add_argument("--min-train-samples", type=int, default=30)
     parser.add_argument(

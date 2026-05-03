@@ -1,9 +1,14 @@
 import os
 import random
 import shutil
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import SRC_ROOT
 
 # ====== CONFIG ======
-root = r"C:\Users\ADMIN\Desktop\personal_train\ML_deppfeat\durian-1"
+root = str(SRC_ROOT)
 split = "train"
 
 target_classes = [2, 12]  

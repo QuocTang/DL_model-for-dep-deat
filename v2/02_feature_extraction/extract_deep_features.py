@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -19,12 +20,14 @@ import yaml
 from tqdm import tqdm
 from ultralytics import YOLO
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import DATA_YAML, DEFAULT_WEIGHTS, EXTRACTED_FEATURES_DIR, SRC_ROOT
 
-WORKSPACE_DIR = Path(__file__).resolve().parent
-DEFAULT_MODEL = WORKSPACE_DIR / "runs" / "detect" / "durian-1-yolo11x" / "weights" / "best.pt"
-DEFAULT_DATA_YAML = WORKSPACE_DIR.parent / "CI_CO-10" / "data.yaml"
-DEFAULT_DATASET_ROOT = WORKSPACE_DIR / "durian-1"
-DEFAULT_OUTPUT_DIR = WORKSPACE_DIR / "extracted_features"
+
+DEFAULT_MODEL = DEFAULT_WEIGHTS
+DEFAULT_DATA_YAML = DATA_YAML
+DEFAULT_DATASET_ROOT = SRC_ROOT
+DEFAULT_OUTPUT_DIR = EXTRACTED_FEATURES_DIR
 DEFAULT_LAYERS = [4, 6, 9]
 
 

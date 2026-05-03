@@ -1,10 +1,16 @@
 import os
+import sys
+from pathlib import Path
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import SRC_ROOT
+
 # ====== ROOT DATASET (folder chứa train/ valid/ test) ======
-root = r"C:\Users\ADMIN\Desktop\personal_train\ML_deppfeat\durian-1"
+root = str(SRC_ROOT)
 
 splits = ["train", "valid"]
 

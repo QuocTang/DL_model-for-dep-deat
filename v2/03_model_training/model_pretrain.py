@@ -1,5 +1,12 @@
+import sys
+from pathlib import Path
+
 import torch
 from ultralytics import YOLO
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import DATA_YAML, DEFAULT_RUN_NAME, RUNS_DIR
+
 
 def main():
     print(f"torch.cuda.is_available(): {torch.cuda.is_available()}")
@@ -9,7 +16,8 @@ def main():
     model = YOLO("yolo11x.pt")
 
     results = model.train(
-        data=r"C:\Users\ADMIN\Desktop\personal_train\ML_deppfeat\durian-1\data.yaml",
+        data=str(DATA_YAML),
+        project=str(RUNS_DIR),
         batch=8,
         epochs=100,
         device=0,
@@ -26,14 +34,16 @@ def main():
         save=True,
         val=True,
         plots=True,
-        name="durian-1-yolo11x"
+        name=DEFAULT_RUN_NAME,
     )
 
     metrics = model.val(
-        data=r"C:\Users\ADMIN\Desktop\personal_train\ML_deppfeat\durian-1\data.yaml",
+        data=str(DATA_YAML),
+        project=str(RUNS_DIR),
+        name="val",
         imgsz=640,
         batch=8,
-        save_json=True
+        save_json=True,
     )
 
     print(metrics)

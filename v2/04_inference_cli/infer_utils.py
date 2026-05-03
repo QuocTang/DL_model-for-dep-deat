@@ -5,19 +5,20 @@ Inference utilities for deep-feature + classical ML prediction.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Dict, List
 
 import joblib
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "02_feature_extraction"))
+from config import DEFAULT_ML_MODEL, DEFAULT_RESULTS_JSON, DEFAULT_WEIGHTS
 from extract_deep_features import YoloFeatureExtractor
 
 
-WORKSPACE_DIR = Path(__file__).resolve().parent
-DEFAULT_YOLO_WEIGHTS = WORKSPACE_DIR / "runs" / "detect" / "durian-1-yolo11x" / "weights" / "best.pt"
-DEFAULT_ML_MODEL = WORKSPACE_DIR / "model_comparison" / "top6_filtered" / "xgb" / "xgb_model.joblib"
-DEFAULT_RESULTS_JSON = WORKSPACE_DIR / "model_comparison" / "top6_filtered" / "xgb" / "results.json"
+DEFAULT_YOLO_WEIGHTS = DEFAULT_WEIGHTS
 
 
 class DeepFeatureMLPredictor:

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -27,11 +28,14 @@ from sklearn.metrics import (
 )
 from sklearn.utils.class_weight import compute_sample_weight
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import EXTRACTED_FEATURES_DIR, ML_MODELS_DIR
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train ML model on extracted deep features")
-    parser.add_argument("--features-dir", type=Path, default=Path("extracted_features"))
-    parser.add_argument("--output-dir", type=Path, default=Path("ml_models"))
+    parser.add_argument("--features-dir", type=Path, default=EXTRACTED_FEATURES_DIR)
+    parser.add_argument("--output-dir", type=Path, default=ML_MODELS_DIR)
     parser.add_argument("--model", choices=["xgb", "rf", "lgbm"], default="xgb")
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args()

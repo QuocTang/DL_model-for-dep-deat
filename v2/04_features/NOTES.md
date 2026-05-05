@@ -242,6 +242,72 @@ File: `v2/05_train_classifier/train_ml_features.py`
 
 ---
 
+## 11. (Tùy chọn) `filter_top_classes.py` — lọc top-K class
+
+### Mục đích
+Sau khi train ML lần đầu (Bước 5), nếu có class quá yếu (F1 thấp / data quá ít), có thể **vứt bớt** rồi train lại để model "tập trung" vào class còn lại.
+
+### Khi nào CẦN chạy?
+| Tình huống | Có cần? |
+|---|---|
+| Dataset nhiều class (vd 15+) và 1 vài class rất yếu | ✅ Nên |
+| Đã refactor 15→6 ở Bước 1 và muốn giữ cả 6 | ❌ KHÔNG cần |
+| Muốn thử model "chỉ 4 class mạnh nhất" để demo | ✅ OK |
+
+→ **Hiện tại không cần** vì đã refactor xuống 6 class ở Bước 1 rồi.
+
+### Cách hoạt động
+```
+Input:
+  v2/output/extracted_features/{train,valid,test}_features.csv  (6 class)
+  v2/output/ml_models/classification_report_valid.csv           (F1 mỗi class)
+
+  ↓ Rank class theo (valid_F1 desc, train_count desc)
+  ↓ Bỏ class có train_count < 30 (data quá ít)
+  ↓ Giữ top-K (default 6)
+  ↓ Remap label cũ → label mới liên tục (0..K-1)
+
+Output:
+  v2/output/extracted_features_top6/{train,valid,test}_features.csv
+  v2/output/extracted_features_top6/selection_summary.json
+```
+
+### 2 chế độ
+
+**Chế độ AUTO** (mặc định) — rank theo F1:
+```bash
+uv run 04_features/filter_top_classes.py --top-k 4
+```
+→ Giữ 4 class có F1 cao nhất + đủ data.
+
+**Chế độ MANUAL** — tự chỉ định:
+```bash
+uv run 04_features/filter_top_classes.py \
+    --class-list "sau-an,benh-chay-la,la-khoe-binh-thuong,benh-dom-mat-cua"
+```
+
+### Lưu ý "remap label"
+Sau khi bỏ class, label cũ có thể `[0, 1, 3, 4]` (thiếu 2). XGBoost cần label **liên tục** `[0, 1, 2, 3]`. Script tự đổi:
+```
+label cũ:  0  1  3  4
+label mới: 0  1  2  3
+```
+Cột `label_raw` giữ giá trị gốc để debug.
+
+### Pipeline nếu dùng filter
+```
+Bước 4a: extract_deep_features.py    → 6-class CSV
+Bước 5a: train_ml_features.py        → ra report
+Bước 4b: filter_top_classes.py       → 4-class CSV  (nếu muốn lọc)
+Bước 5b: train_ml_features.py \
+            --features-dir output/extracted_features_top6 \
+            --output-dir output/ml_models_top4
+```
+
+→ Train **2 lần**: lần 1 để biết class nào yếu, lần 2 sau khi lọc.
+
+---
+
 ## Tóm tắt 1 dòng
 
-> Bước 4 = bóp não YOLO ra **512 con số** cho mỗi ảnh, để Bước 5 (XGBoost) học classification.
+> Bước 4 = bóp não YOLO ra **512 con số** cho mỗi ảnh, để Bước 5 (XGBoost) học classification. `filter_top_classes.py` là tùy chọn — chỉ dùng nếu muốn vứt bớt class yếu sau khi đã train xong lần 1.

@@ -544,6 +544,86 @@ Bước 5b: train_ml_features.py \
 
 ---
 
+## Phụ lục A — Tham số chi tiết của extractor
+
+> Bước 4 không "train" model nào, nên "hyperparameter" ở đây là các **lựa chọn cấu hình** ảnh hưởng đến vector output. Tổng cộng 6 tham số đáng biết.
+
+### A.1. `input_size` (= `--imgsz`)
+- **Default code**: `640` trong constructor, nhưng project mình dùng `320` (khớp với train Bước 3).
+- **Ảnh hưởng**: output spatial size của 3 feature map.
+
+| imgsz | Layer 4 (40×40 ở 320) | Layer 6 | Layer 9 | Tốc độ | RAM/ảnh |
+|---:|---|---|---|---|---|
+| 320 | 40×40 | 20×20 | 10×10 | nhanh ✅ | ~50MB |
+| 416 | 52×52 | 26×26 | 13×13 | x1.7 chậm | ~80MB |
+| 640 | 80×80 | 40×40 | 20×20 | x4 chậm | ~200MB |
+
+> Vector cuối **luôn 512 chiều** dù imgsz nào (vì pool về 1×1) — chỉ tốc độ + chất lượng activation thay đổi.
+
+### A.2. `layer_indices` (= `--layers`)
+- **Default**: `[4, 6, 9]`.
+- YOLO11n có 23 layer (0-22). Phân vùng:
+
+| Vùng layer | Học gì | Recommend? |
+|---|---|---|
+| 0-3 | Cạnh, màu thô (pixel-level) | ❌ Quá thấp |
+| **4-9** | **Texture, hình nhỏ (đốm, vân lá)** | ✅ Sweet spot |
+| 10-15 | Object parts (cuống, mép lá) | ⚠️ Có thể thử |
+| 16-22 | Detection head (chuyên cho box) | ❌ Quá đặc thù |
+
+**Tradeoff số lượng layer chọn**:
+- 1 layer (vd `[6]`): vector 128 chiều — ít info, có thể đủ cho task đơn giản.
+- 3 layer (default): 512 chiều — đa scale, balance.
+- 5+ layer (vd `[3,5,7,9,11]`): 700-1000+ chiều — dễ overfit ở Bước 5 với data nhỏ.
+
+**Combo gợi ý cho thử nghiệm**:
+- `4,6,9` (default): texture + middle features.
+- `5,7,9`: bias high-level (vật thể hơn texture).
+- `2,4,6`: bias low-level (texture/màu thô — nếu task nhạy cảm với màu).
+- `4,6,9,11`: thử thêm 1 layer trên — vector 832 chiều.
+
+### A.3. `device` (auto)
+- Code: `torch.device("cuda" if torch.cuda.is_available() else "cpu")`.
+- Không có CLI flag override — fix bằng env `CUDA_VISIBLE_DEVICES=""` nếu muốn ép CPU.
+- GPU vs CPU: forward 1 ảnh 320×320 ~10ms (GPU) vs ~80ms (CPU). 2700 ảnh ≈ 27s vs 3.5 phút.
+
+### A.4. Letterbox padding `(114, 114, 114)`
+- **Magic number** của Ultralytics — YOLO được train với gray pad value này.
+- Đổi sang `(0,0,0)` đen hay `(255,255,255)` trắng → activation các layer biên thay đổi → vector lệch khỏi phân bố train.
+- ⚠️ **Không bao giờ thay đổi** nếu best.pt train với chuẩn Ultralytics.
+- Nếu train YOLO custom với pad value khác → phải sửa cùng giá trị ở đây.
+
+### A.5. Resize interpolation `cv2.INTER_LINEAR`
+- Default trong `_letterbox`. Các option khác:
+
+| Option | Tốc độ | Chất lượng | Use case |
+|---|---|---|---|
+| `INTER_NEAREST` | nhanh nhất | vỡ texture ❌ | KHÔNG dùng |
+| **`INTER_LINEAR`** | nhanh | tốt ✅ | **Default** |
+| `INTER_CUBIC` | chậm hơn 2× | mịn hơn | Overkill cho 320 |
+| `INTER_AREA` | trung bình | tốt khi downsize lớn | OK nếu ảnh gốc ≥ 2000px |
+
+Không cần đổi cho use case bệnh lá sầu riêng.
+
+### A.6. Adaptive pool target `(1, 1)`
+- Hiện pool về `1×1` → bỏ hết thông tin vị trí, chỉ giữ "có/không có pattern".
+- Có thể đổi để giữ chút spatial info:
+
+| Pool target | Output từ layer 4,6,9 | Tổng chiều | Ưu / Nhược |
+|---|---|---:|---|
+| **`(1,1)`** | 64+128+320 | **512** | Default. Đủ cho leaf disease. |
+| `(2,2)` | (64+128+320)×4 | 2048 | Giữ vị trí thô (4 góc). Vector dài 4×. |
+| `(4,4)` | (64+128+320)×16 | 8192 | Quá dài, dễ overfit. Cần data >5000. |
+
+⚠️ **Đổi → phải retrain Bước 5** (vì vector dimension thay đổi).
+
+### A.7. Tóm tắt: thường chỉ cần đổi 2 tham số
+- `--imgsz` (khớp Bước 3): bắt buộc.
+- `--layers` (nếu thử nghiệm khác): tùy chọn.
+- 4 tham số còn lại (padding, interpolation, pool target, device) **để mặc định** trừ khi có lý do mạnh.
+
+---
+
 ## Tóm tắt 1 dòng
 
 > Bước 4 = bóp não YOLO ra **512 con số** cho mỗi ảnh, để Bước 5 (XGBoost) học classification. Trái tim file là class `YoloFeatureExtractor` với 5 method: `__init__`/`_register_hooks` (cắm camera) → `_letterbox` (chuẩn hóa ảnh) → `extract_array` (forward + pool) → `extract_one` (wrapper file). `filter_top_classes.py` là tùy chọn, chỉ dùng nếu muốn vứt bớt class yếu sau khi train xong lần 1.

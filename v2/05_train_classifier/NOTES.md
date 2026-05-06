@@ -690,6 +690,211 @@ uv run 05_train_classifier/compare_models.py --comparison-dir output/model_compa
 
 ---
 
+## Phụ lục A — Tham số chi tiết 3 model
+
+> Đây là deep-dive cho ai muốn tune. Section 3.3 đã giới thiệu nhanh, phần này đầy đủ + bao gồm cả RF và LGBM.
+
+### A.1. XGBoost — `XGBClassifier`
+
+**Bảng đầy đủ tham số set trong code** (`train_ml_features.py:67-77`)
+
+| Tham số | Default code | Ý nghĩa | Tăng → | Giảm → |
+|---|---|---|---|---|
+| `n_estimators` | 450 | Số cây boosting | Học sâu, dễ overfit, chậm | Underfit |
+| `max_depth` | 8 | Sâu max của 1 cây | Cây phức tạp, dễ overfit | Cây nông, đơn giản |
+| `learning_rate` | 0.06 | Bước học mỗi cây (η) | Học nhanh, dễ vọt qua optimum | Học chậm, cần nhiều cây |
+| `subsample` | 0.85 | % row mỗi cây thấy | (giữ 0.8-0.9) chống overfit | < 0.5 = noise nhiều |
+| `colsample_bytree` | 0.85 | % feature mỗi cây thấy | (giữ 0.8-0.9) chống overfit | < 0.5 = ngẫu nhiên hơn |
+| `objective` | `multi:softprob` | Multi-class, output probability | (cố định) | |
+| `eval_metric` | `mlogloss` | Hàm lỗi multi-class | (cố định) | |
+| `random_state` | seed (=42) | Reproducibility | | |
+| `n_jobs` | -1 | Số CPU thread | -1 = tất cả | 1 = single thread |
+
+**Tham số XGBoost không set (mặc định) — đáng biết**:
+
+| Tham số | Default | Ý nghĩa | Khi nào tune |
+|---|---|---|---|
+| `gamma` | 0 | Min loss reduction để split | Tăng → cây tiết kiệm split → chống overfit |
+| `min_child_weight` | 1 | Min sum of hessian ở 1 leaf | Tăng → leaf "vững" hơn → chống overfit |
+| `reg_alpha` | 0 | L1 regularization (Lasso) | Tăng → chọn ít feature → sparse |
+| `reg_lambda` | 1 | L2 regularization (Ridge) | Tăng → smooth weights, chống overfit |
+| `tree_method` | "hist" | Thuật toán build cây | "hist" nhanh nhất; "exact" chính xác hơn |
+| `early_stopping_rounds` | None | Dừng sớm nếu valid không cải thiện | Set 50 nếu có valid set, tiết kiệm time |
+
+**Tune workflow XGBoost cho data ~2000 sample**:
+```
+1. Bắt đầu: defaults code này.
+2. Nếu OVERFIT (train F1 - test F1 > 0.15):
+   ↓ max_depth: 8 → 5
+   ↑ gamma: 0 → 1
+   ↓ learning_rate: 0.06 → 0.03 (kèm ↑ n_estimators: 450 → 900)
+   ↑ reg_lambda: 1 → 5
+3. Nếu UNDERFIT (train F1 < 0.7):
+   ↑ max_depth: 8 → 12
+   ↑ n_estimators: 450 → 700
+   ↓ regularization về 0
+```
+
+---
+
+### A.2. RandomForest — `RandomForestClassifier`
+
+**Bảng tham số set trong code** (`train_ml_features.py:96-101`)
+
+| Tham số | Default code | Ý nghĩa | Lưu ý |
+|---|---|---|---|
+| `n_estimators` | 500 | Số cây độc lập (bagging) | Nhiều hơn càng ổn nhưng diminishing returns sau 500 |
+| `class_weight` | "balanced_subsample" | Trọng số class theo subsample | Khác `sample_weight` ở XGB — built-in |
+| `random_state` | seed | Reproducibility | |
+| `n_jobs` | -1 | Số CPU thread | Train song song được vì cây độc lập ✅ |
+
+**Tham số RandomForest không set (mặc định) — đáng biết**:
+
+| Tham số | Default | Ý nghĩa | Khi nào tune |
+|---|---|---|---|
+| `max_depth` | None | Không giới hạn | Set 10-20 nếu overfit |
+| `min_samples_split` | 2 | Min sample để split | Tăng → cây "thận trọng" hơn |
+| `min_samples_leaf` | 1 | Min sample ở leaf | Tăng → leaf "vững", chống overfit |
+| `max_features` | "sqrt" | Số feature mỗi split xét | √512 ≈ 22. **Trick chính** chống overfit của RF |
+| `bootstrap` | True | Bootstrap sample mỗi cây | False = train trên toàn data → ít diversity |
+
+**RF vs XGBoost — bảng so sánh**:
+
+| | RandomForest | XGBoost |
+|---|---|---|
+| Loại ensemble | Bagging (cây độc lập) | Boosting (cây tuần tự) |
+| Học từ lỗi cây trước? | ❌ | ✅ |
+| Train song song? | ✅ (n_jobs=-1 hiệu quả tuyệt đối) | ⚠️ Một phần (cây tuần tự) |
+| Overfit | Khó (vote averaging) | Dễ hơn (cần regularize) |
+| Tốc độ | Nhanh | Trung bình |
+| Hiệu suất data nhỏ | Tốt | Thường tốt hơn |
+| Hiệu suất data lớn | Đỡ scale | Scale tốt hơn |
+
+**Khi nào dùng RF**:
+- Baseline nhanh, ít cần tune.
+- Data nhỏ (< 1000 sample).
+- Cần feature importance đơn giản (`rf.feature_importances_`).
+
+---
+
+### A.3. LightGBM — `LGBMClassifier`
+
+**Bảng tham số set trong code** (`train_ml_features.py:82-91`)
+
+| Tham số | Default code | Ý nghĩa | Khác XGBoost |
+|---|---|---|---|
+| `n_estimators` | 450 | Số cây | Giống XGB |
+| `learning_rate` | 0.06 | Bước học | Giống XGB |
+| `num_leaves` | 63 | Số leaf max của 1 cây | XGB dùng `max_depth`, LGBM dùng `num_leaves` |
+| `subsample` | 0.85 | % row mỗi cây | Giống XGB |
+| `colsample_bytree` | 0.85 | % col mỗi cây | Giống XGB |
+| `objective` | "multiclass" | Multi-class | Tên khác XGB ("multi:softprob") |
+| `random_state` | seed | Reproducibility | |
+| `n_jobs` | -1 | Threads | |
+| `verbosity` | -1 | Tắt log | LGBM log nhiều mặc định, -1 để im |
+
+**`num_leaves` — sự khác biệt then chốt với XGBoost**:
+- LGBM **leaf-wise growth**: split leaf giảm loss nhiều nhất → cây không cân bằng nhưng nhanh hội tụ.
+- XGB **level-wise growth**: split tất cả leaf cùng level → cây cân bằng.
+- `num_leaves=63` ≈ depth 6 (cây cân bằng có 2^6 = 64 leaf).
+- ⚠️ **Quy tắc an toàn**: `num_leaves < 2^max_depth_thực` để tránh overfit.
+
+| `num_leaves` | Tương đương depth XGB | Khi nào dùng |
+|---:|---|---|
+| 31 (default LGBM) | ~5 | Data nhỏ, chống overfit |
+| 63 (code này) | ~6 | Balance |
+| 127 | ~7 | Data lớn, pattern phức tạp |
+| 255 | ~8 | Cẩn thận overfit |
+
+**Tham số LGBM không set (mặc định) đáng biết**:
+
+| Tham số | Default | Ý nghĩa |
+|---|---|---|
+| `boosting_type` | "gbdt" | "dart" (drop-out) hoặc "goss" (gradient-based sampling) cho data lớn |
+| `min_data_in_leaf` | 20 | Tương tự `min_samples_leaf` của RF |
+| `lambda_l1` | 0 | L1 regularization |
+| `lambda_l2` | 0 | L2 regularization |
+| `min_split_gain` | 0 | Tương tự `gamma` của XGB |
+
+**Khi nào chọn LGBM thay vì XGBoost**:
+- Data **lớn** (>10k sample): LGBM nhanh hơn 2-3×.
+- Có nhiều **feature category**: LGBM xử lý native (XGB phải one-hot).
+- Data nhỏ (~2000 như project này): khác biệt không đáng kể, chọn cái nào cũng được.
+
+---
+
+### A.4. `compute_sample_weight("balanced")` — Công thức + ví dụ
+
+**Công thức**:
+```
+weight_i = n_total / (n_classes × n_samples_in_class_i)
+```
+
+**Ví dụ với 6 class, 2359 sample train**:
+
+| Class | n_samples | weight (đã tính) |
+|---|---:|---:|
+| benh-chay-la | 778 | 2359 / (6 × 778) ≈ **0.51** |
+| sau-an | 639 | 2359 / (6 × 639) ≈ **0.62** |
+| benh-than-thu | 315 | ≈ **1.25** |
+| benh-dom-mat-cua | 222 | ≈ **1.77** |
+| others | 204 | ≈ **1.93** |
+| la-khoe-binh-thuong | 201 | ≈ **1.96** |
+
+→ Class hiếm `la-khoe` có weight gấp **~3.8×** class lớn `chay-la`. Khi tính loss, sample của `la-khoe` được nhân ~3.8× → model phải chú ý nhiều hơn.
+
+**Alternative — tự xây class weight (mạnh tay hơn balanced)**:
+```python
+# Phạt class hiếm gấp 5× so với class lớn (mạnh hơn balanced)
+class_weight_dict = {0: 1.0, 1: 1.0, 2: 5.0, 3: 5.0, 4: 5.0, 5: 5.0}
+sample_weight = np.array([class_weight_dict[y] for y in y_train])
+model.fit(X_train, y_train, sample_weight=sample_weight)
+```
+
+→ Dùng khi `balanced` chưa đủ, vd có class cực hiếm (< 50 sample).
+
+**Alternative khác — SMOTE (sinh sample mới)**:
+```python
+from imblearn.over_sampling import SMOTE
+X_resampled, y_resampled = SMOTE(random_state=42).fit_resample(X_train, y_train)
+# rồi train không cần sample_weight
+```
+
+→ Tạo synthetic sample cho class hiếm. Tốn thêm dependency `imbalanced-learn`. Có thể tốt hơn `sample_weight` cho data extremely imbalanced.
+
+---
+
+### A.5. Khi nào tune cái gì? (Rough guide)
+
+```
+┌─ TRIỆU CHỨNG ──────────────┬─ HÀNH ĐỘNG ────────────────────────┐
+│ Train F1 cao, Test F1 thấp │ ↓ max_depth (XGB) / num_leaves     │
+│ (OVERFIT)                  │ ↑ gamma (XGB) / min_child_weight   │
+│                            │ ↓ learning_rate + ↑ n_estimators   │
+│                            │ ↑ reg_alpha / reg_lambda           │
+├────────────────────────────┼────────────────────────────────────┤
+│ Train F1 thấp, Test F1 thấp│ ↑ max_depth / num_leaves           │
+│ (UNDERFIT)                 │ ↑ n_estimators                     │
+│                            │ ↓ regularization về 0              │
+├────────────────────────────┼────────────────────────────────────┤
+│ Class hiếm yếu             │ ↑ sample_weight cho class đó       │
+│                            │ thử SMOTE                          │
+│                            │ thử filter_top_classes bỏ class    │
+├────────────────────────────┼────────────────────────────────────┤
+│ Train chậm, F1 OK          │ ↑ learning_rate + ↓ n_estimators   │
+│                            │ ↑ subsample / colsample (giảm size)│
+└────────────────────────────┴────────────────────────────────────┘
+```
+
+### A.6. Tóm tắt: 3 tham số chính cần nhớ
+- `n_estimators` — số cây.
+- `max_depth` (XGB) / `num_leaves` (LGBM) — phức tạp 1 cây.
+- `learning_rate` — tốc độ học.
+
+3 tham số trên + `sample_weight=balanced` đã đủ cho 80% trường hợp. Phần còn lại (gamma, reg_*) chỉ cần khi đã tune cơ bản mà vẫn overfit.
+
+---
+
 ## Tóm tắt 1 dòng
 
 > Bước 5 = đưa **vector 512 số** từ Bước 4 cho **XGBoost** (450 cây boosting) học, có **sample_weight chống imbalance**, ra classifier với **Test Acc 65%, Macro F1 63%**. Trái tim file `train_ml_features.py` là `main()`: load CSV → map label liên tục → build_model → fit với sample_weight → predict → evaluate (P/R/F1 + confusion matrix) → save 2 format model + JSON tóm tắt. Class hiếm (la-khoe, dom-mat) được "giải cứu" so với YOLO.
